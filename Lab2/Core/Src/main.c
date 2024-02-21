@@ -84,7 +84,7 @@ int main(void)
 
   /* Configure the system clock */
   SystemClock_Config();
-
+	
   /* USER CODE BEGIN SysInit */
 
   /* USER CODE END SysInit */
@@ -118,7 +118,7 @@ int main(void)
 		//Set priority of EXTI Interrupt
 		NVIC_SetPriority(EXTI0_1_IRQn, 2);
 		//Set priority of SysTick Interrupt
-		NVIC_SetPriority(SysTick_IRQn , 1);
+		NVIC_SetPriority(SysTick_IRQn , 3);
   /* USER CODE END 2 */
 
   /* Infinite loop */
