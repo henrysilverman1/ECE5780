@@ -87,9 +87,7 @@ int main(void)
 	__HAL_RCC_GPIOC_CLK_ENABLE();
 	__HAL_RCC_TIM2_CLK_ENABLE();
 	__HAL_RCC_TIM3_CLK_ENABLE();
-	//RCC->AHBENR |= RCC_AHBENR_GPIOCEN; // Enable peripheral clock to GPIOC
-	//RCC->APB1ENR |=RCC_APB1ENR_TIM2EN;
-	//RCC->AHBENR |= RCC_APB1ENR_TIM3EN; // Enable peripheral clock to TIMER3
+
 	
 	//Timer 2 config
 	TIM2->PSC = 7999;
@@ -101,8 +99,8 @@ int main(void)
 	TIM3->PSC = 79; //39 may work better if PWM not showing 20%
 	TIM3->ARR = 125;
 	TIM3->DIER |= 1<<0;// DEIR register set to enable update interrupt
-	TIM3->CCMR1 &= ~((1<<0) | (1<<1) | (1<<8) | (1<<9));
-	TIM3->CCMR1 |= ((1<<3) | (1<<4) |(1<<5) | (1<<6) | (1<<11));
+	TIM3->CCMR1 &= ~((1<<0) | (1<<4) | (1<<1) | (1<<8) | (1<<9) | (1<<12));
+	TIM3->CCMR1 |= ((1<<3) | (1<<4) |(1<<5) | (1<<6) | (1<<11) | (1<<13) | (1<<14));
 	TIM3->CCER = ((TIM_CCER_CC1E) | (TIM_CCER_CC2E));
 	TIM3->CCR1 = 25;
 	TIM3->CCR2 = 25;
@@ -115,7 +113,6 @@ int main(void)
 	GPIOC->OTYPER &= ~((1 << 6) | (1 << 7)); //Setting OTYPER bits to 0 for output push-pull
 	GPIOC->OSPEEDR &= ~((1 <<	12) | (1 <<	14)); //Setting second OSPEEDR bits to 0 for low speed
 	GPIOC->PUPDR &= ~((1 <<	12) | (1 <<	13) | (1 <<	14) | (1 <<	15)); //Setting both PUPDR bits 0 for no pull-up, pull-down
-	GPIOC->ODR |= ((1 << 6) | (1 << 7)); //Set blue, red LED's high
 	
 	NVIC_EnableIRQ(15);
 	
