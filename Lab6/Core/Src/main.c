@@ -83,7 +83,7 @@ int main(void)
 	HAL_GPIO_Init(GPIOC, &ledString);
 	
 	/* Checkoff 1 -----------------------------------------------------------------*/
-	//Configure the ADC input to PA0/ADC_IN0
+	//Configure the ADC input to PA1/ADC_IN0
 	GPIOA -> MODER |= (1<<1) | (1<<0); // Analog mode
 	GPIOA -> MODER &= ~(1<<1) | (1<<0); // No pull-up, pull-down
 	
@@ -131,47 +131,47 @@ int main(void)
 	ADC1 -> CR |= (1<<2);
 	
 /* Checkoff 2 -----------------------------------------------------------------*/
-	RCC->APB1ENR |= RCC_APB1ENR_DACEN;
-	//Configure the DAC input to PA4/DAC_OUT1
-	GPIOA -> MODER |= (1<<8) | (1<<9); // Analog mode
-	GPIOA -> MODER &= ~(1<<8) | (1<<9); // No pull-up, pull-down
-	
-	DAC -> SWTRIGR |= (1<<0); //Enable software trigger with 1 in bit 0
-	DAC -> CR |= (1<<0); //Enable channel 1 with 1 in bit 0
-	
-	//tables for conversion
-	const uint8_t sawtooth_table[32] = {0,7,15,23,31,39,47,55,63,71,79,87,95,103,111,119,127,134,142,150,158,166,174,182,190,198,206,214,222,230,238,246};
-	const uint8_t triangle_table[32] = {0,15,31,47,63,79,95,111,127,142,158,174,190,206,222,238,254,238,222,206,190,174,158,142,127,111,95,79,63,47,31,15};
-	const uint8_t sine_table[32] = {127,151,175,197,216,232,244,251,254,251,244,232,216,197,175,151,127,102,78,56,37,21,9,2,0,2,9,21,37,56,78,102};
-	
-	int i = 0;
-  
+//	RCC->APB1ENR |= RCC_APB1ENR_DACEN;
+//	//Configure the DAC input to PA4/DAC_OUT1
+//	GPIOA -> MODER |= (1<<8) | (1<<9); // Analog mode
+//	GPIOA -> MODER &= ~(1<<8) | (1<<9); // No pull-up, pull-down
+//	
+//	DAC -> SWTRIGR |= (1<<0); //Enable software trigger with 1 in bit 0
+//	DAC -> CR |= (1<<0); //Enable channel 1 with 1 in bit 0
+//	
+//	//tables for conversion
+//	const uint8_t sawtooth_table[32] = {0,7,15,23,31,39,47,55,63,71,79,87,95,103,111,119,127,134,142,150,158,166,174,182,190,198,206,214,222,230,238,246};
+//	const uint8_t triangle_table[32] = {0,15,31,47,63,79,95,111,127,142,158,174,190,206,222,238,254,238,222,206,190,174,158,142,127,111,95,79,63,47,31,15};
+//	const uint8_t sine_table[32] = {127,151,175,197,216,232,244,251,254,251,244,232,216,197,175,151,127,102,78,56,37,21,9,2,0,2,9,21,37,56,78,102};
+//	
+//	int i = 0;
+//  
   while (1)
   {
 //		/* Checkoff 1 -----------------------------------------------------------------*/
-//    int dataADC = ADC1 -> DR;
-//		if (dataADC > 0)
-//			GPIOC -> ODR |= (1<<6);
-//		else
-//			GPIOC -> ODR &= ~(1<<6);
-//		if (dataADC >= 64)
-//			GPIOC -> ODR |= (1<<9);
-//		else
-//			GPIOC -> ODR &= ~(1<<9);
-//		if (dataADC >= 128)
-//			GPIOC -> ODR |= (1<<7);
-//		else
-//			GPIOC -> ODR &= ~(1<<7);
-//		if (dataADC >= 192)
-//			GPIOC -> ODR |= (1<<8);
-//		else
-//			GPIOC -> ODR &= ~(1<<8);
+    int dataADC = ADC1 -> DR;
+		if (dataADC > 0)
+			GPIOC -> ODR |= (1<<6);
+		else
+			GPIOC -> ODR &= ~(1<<6);
+		if (dataADC >= 64)
+			GPIOC -> ODR |= (1<<9);
+		else
+			GPIOC -> ODR &= ~(1<<9);
+		if (dataADC >= 128)
+			GPIOC -> ODR |= (1<<7);
+		else
+			GPIOC -> ODR &= ~(1<<7);
+		if (dataADC >= 192)
+			GPIOC -> ODR |= (1<<8);
+		else
+			GPIOC -> ODR &= ~(1<<8);
 		/* Checkoff 2 -----------------------------------------------------------------*/
-		DAC -> DHR8R1 = sine_table[i];//Set 8-bit right aligned DAC output register to value of index i
-		HAL_Delay(1);//1 ms delay
-		i ++; //increase index
-		if (i==32)//reset index for repeated conversion
-			i =0;
+//		DAC -> DHR8R1 = sine_table[i];//Set 8-bit right aligned DAC output register to value of index i
+//		HAL_Delay(1);//1 ms delay
+//		i ++; //increase index
+//		if (i==32)//reset index for repeated conversion
+//			i =0;
 		
     /* USER CODE BEGIN 3 */
   }
