@@ -87,52 +87,68 @@ int main(void)
 	__HAL_RCC_GPIOC_CLK_ENABLE();
 	__HAL_RCC_TIM2_CLK_ENABLE();
 	__HAL_RCC_TIM3_CLK_ENABLE();
+	
+	//Red and Blue LED setup (PC6 & PC7)
+	GPIOC->MODER |= ((1<<15) | (1<<13));//AF mode
+	GPIOC->MODER &= ~((1<<12) | (1<<14));
+	GPIOC->AFR[0] &= ~((1<<24)| (1<<25)| (1<<26)| (1<<27)); //Set AF PC6
+	GPIOC->AFR[0] &= ~((1<<28)| (1<<29)| (1<<30)| (1<<31)); //Set AF PC7
+	GPIOC->OTYPER &= ~((1 << 6) | (1 << 7)); //Setting OTYPER bits to 0 for output push-pull
+	GPIOC->OSPEEDR &= ~((1 <<	12) | (1 <<	13) | (1 <<	14) | (1 <<	15)); //Setting both OSPEEDR bits to 0 for low speed
+	GPIOC->PUPDR &= ~((1 <<	12) | (1 <<	13) | (1 <<	14) | (1 <<	15)); //Setting both PUPDR bits 0 for no pull-up, pull-down
+	
+	//Orange and green LED setup (PC8 & PC9)
+	GPIOC->MODER |= ((1 <<	16) | (1 <<	18)); //Setting second MODER bits to 1 for general-purpose output mode for PC8 and PC9
+	GPIOC->MODER &= ~((1 <<	17) | (1 <<	19)); // Setting first MODER bits to 0 general-purpose output mode for PC8 and PC9
+	GPIOC->OTYPER &= ~((1 << 8) | (1 << 9)); //Setting OTYPER bits to 0 for output push-pull
+	GPIOC->OSPEEDR &= ~((1 <<	16) | (1 <<	17) | (1 <<	18) | (1 <<	19)); //Setting both OSPEEDR bits to 0 for low speed
+	GPIOC->PUPDR &= ~((1 <<	16) | (1 <<	17) | (1 <<	18) | (1 <<	19)); //Setting both PUPDR bits 0 for no pull-up, pull-down
+	
+	
+	GPIOC->ODR |= (1 << 6); //Set red LED high
+	GPIOC->ODR |= (1 << 7); //Set blue LED high
+	GPIOC->ODR &= ~((1 << 8)); //Set orange LED low
+	GPIOC->ODR |= (1 << 9); //Set Green LED high
 
 	
 	//Timer 2 config
-	TIM2->PSC = 7999;
-	TIM2->ARR = 250;
-	TIM2->DIER |= 1<<0;// DEIR register set to enable update interrupt
-	TIM2->CR1 |= 1;//Timer 2 enable
+	TIM2->PSC = 3999; //PSC to 7999 to clk is 1kHz
+	TIM2->ARR = 250; //4Hz
+	TIM2->DIER |= (1<<0);// DEIR register set to enable update interrupt
+	TIM2->CR1 |= (1<<0);//Timer 2 enable
 	
+	//Timer 3 config
+	TIM3->PSC = 7; // Clk freq to 100kHz
+	TIM3->ARR = 1250; // 800Hz
+	/*Bit definitions for CCMR1 reg:
+			Bit 3: Output compare preload ch1 enable
+			Bits 4,5,6: Ch1 to PWM mode 2
+			Bit 11: Output compare preload ch1 enable
+			Bits 12,13,14: Ch2 to PWM mode 1
+			*/
+	TIM3->CCMR1 &= ~(/*(1<<0) | (1<<4) | (1<<1) | (1<<8) | (1<<9) |*/ (1<<12)); //Output ch1 to PWM mode 2, 
+	TIM3->CCMR1 |= ((1<<3) | (1<<4) |(1<<5) | (1<<6) | (1<<11) | (1<<13) | (1<<14)); 
+	TIM3->CCER |= ((1<<0) | (1<<4)); //Enable ch1 and ch2
+	TIM3->CCR1 = 1250;//CCRx 20% ARR
+	TIM3->CCR2 = 1250;
+	TIM3 -> CR1 |= (1<<0);//Timer 3 enable
 	
-	TIM3->PSC = 79; //39 may work better if PWM not showing 20%
-	TIM3->ARR = 125;
-	TIM3->DIER |= 1<<0;// DEIR register set to enable update interrupt
-	TIM3->CCMR1 &= ~((1<<0) | (1<<4) | (1<<1) | (1<<8) | (1<<9) | (1<<12));
-	TIM3->CCMR1 |= ((1<<3) | (1<<4) |(1<<5) | (1<<6) | (1<<11) | (1<<13) | (1<<14));
-	TIM3->CCER = ((TIM_CCER_CC1E) | (TIM_CCER_CC2E));
-	TIM3->CCR1 = 25;
-	TIM3->CCR2 = 25;
-	
-	GPIOC->MODER |= ((1<<15) | (1<<13));
-	GPIOC->MODER &= ~((1<<12) | (1<<14));
-	GPIOC->AFR[0] &= ~((1<<24)| (1<<25)| (1<<26)| (1<<27));
-	GPIOC->AFR[0] &= ~((1<<28)| (1<<29)| (1<<30)| (1<<31));
-	
-	GPIOC->OTYPER &= ~((1 << 6) | (1 << 7)); //Setting OTYPER bits to 0 for output push-pull
-	GPIOC->OSPEEDR &= ~((1 <<	12) | (1 <<	14)); //Setting second OSPEEDR bits to 0 for low speed
-	GPIOC->PUPDR &= ~((1 <<	12) | (1 <<	13) | (1 <<	14) | (1 <<	15)); //Setting both PUPDR bits 0 for no pull-up, pull-down
-	
-	NVIC_EnableIRQ(15);
-	
-	GPIO_InitTypeDef OGledString = {GPIO_PIN_8 | GPIO_PIN_9,
-															GPIO_MODE_OUTPUT_PP,
-															GPIO_SPEED_FREQ_LOW,
-															GPIO_NOPULL};
-	HAL_GPIO_Init(GPIOC, &OGledString);
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
-	//GPIOC->MODER |= ((1 <<	16) | (1 <<	18)); //Setting second MODER bits to 1 for general-purpose output mode for PC8 and PC9
-	//GPIOC->MODER &= ~((1 <<	17) | (1 <<	19)); // Setting first MODER bits to 0 general-purpose output mode for PC8 and PC9
-	//GPIOC->OTYPER &= ~((1 << 8) | (1 << 9)); //Setting OTYPER bits to 0 for output push-pull
-	//GPIOC->OSPEEDR &= ~((1 <<	16) | (1 <<	18)); //Setting second OSPEEDR bits to 0 for low speed
-	//GPIOC->PUPDR &= ~((1 <<	16) | (1 <<	17) | (1 <<	18) | (1 <<	19)); //Setting both PUPDR bits 0 for no pull-up, pull-down
-	//GPIOC->ODR &= ~((1 << 8)); //Set orange LED low
-	//GPIOC->ODR |= ((1 << 9)); //Set Green LED high
+	NVIC_EnableIRQ(TIM2_IRQn);
+
+		
 	
 	
   /* USER CODE END 2 */
+
+  /* USER CODE END 2 */
+	
+	// Enable EXTI interrupt
+	NVIC_EnableIRQ(TIM2_IRQn);
+	
+	// Enable Timer 2
+	TIM2->CR1 |= (1<<0);
+	// Enable Timer 3
+	TIM3->CR1 |= (1<<0);
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
