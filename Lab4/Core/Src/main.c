@@ -60,14 +60,83 @@ void SystemClock_Config(void);
   * @brief  The application entry point.
   * @retval int
   */
-	void transmit_string(char arr[])
+	
+int receive_value = 0; //set intial receive value
+int receive_flag = 0; //clear receive flag
+int led_num = 0; //initialize LED number
+int flag = 0; //
+void trans_char(char c) //Function to transmit single character
 {
-	for (int i = 0; arr[i] != '\0'; i++)
+	while(1) 
 	{
-		while(!((USART3->ISR >> 7)& 1));
-		USART3->TDR = arr[i];
-		
+		if ((USART3->ISR & (1<<7)) == (1<<7)) //Check stop bit
+		{
+			break;
+		}
 	}
+	USART3->TDR = c; // Write character to UART register
+}
+	
+void trans_string(const char* string) // Function to transmit string of charachters
+{
+	while(*string != '\0') //Check to see if end of string has been reached
+	{
+		trans_char(*string); //transmit current char of string
+		string++; //Move to next char of string
+	}
+}
+
+void USART3_4_IRQHandler(void)
+{
+	int cmd_text_printed = 0;
+	while (!(USART3->ISR & USART_ISR_RXNE)) {}
+	
+	receive_value = (USART3->RDR) &= 0xff;
+	
+	switch (receive_value)
+	{
+		case 'r':
+			trans_string("RED LED\n");
+			led_num = 6;
+			break;
+		case 'b':
+			trans_string("BLUE LED\n");
+			receive_value = 7;
+			break;
+		case 'o':
+			trans_string("ORANGE LED\n");
+			led_num = 8;
+			break;
+		case 'g':
+			trans_string("GREEN LED\n");
+			led_num = 9;
+			break;
+		case '0':
+			if (led_num != 0)
+			{
+				trans_string("COMMAND OFF\n");
+				GPIOC->ODR &= ~(1<<led_num);
+			}
+			break;
+		case '1':
+			if (led_num != 0)
+			{
+				trans_string("COMMAND ON\n");
+				GPIOC->ODR |= (1<<led_num);
+			}
+			break;
+		case '2':
+			if (led_num != 0)
+			{
+				trans_string("COMMAND TOGGLE\n");
+				GPIOC->ODR ^= (1<<led_num);
+			}
+			break;
+		default:
+			trans_string("Error: Ivalid Command\n");
+			led_num = 0;
+	}
+	receive_flag = 1; // Set received flag 
 }
 int main(void)
 {
@@ -97,19 +166,76 @@ int main(void)
 	__HAL_RCC_GPIOB_CLK_ENABLE();
 	__HAL_RCC_GPIOC_CLK_ENABLE();
 	__HAL_RCC_USART1_CLK_ENABLE();
-	GPIO_InitTypeDef ledString = {GPIO_PIN_6 | GPIO_PIN_7| GPIO_PIN_8 | GPIO_PIN_9,
-															GPIO_MODE_OUTPUT_PP,
-															GPIO_SPEED_FREQ_LOW,
-															GPIO_NOPULL};
-	HAL_GPIO_Init(GPIOC, &ledString);
-															
-	GPIO_InitTypeDef txRxString = {GPIO_PIN_10 | GPIO_PIN_11,
-															GPIO_MODE_AF_PP,
-															GPIO_SPEED_FREQ_LOW,
-															GPIO_NOPULL
-																};
-	HAL_GPIO_Init(GPIOB, &txRxString);
 	
+	/* Set PB10 as TX for USART3 */
+	// Set to af
+	GPIOB->MODER &= ~(1<<20);
+	GPIOB->MODER |= (1<<21);
+	// Set to af4
+	GPIOB->AFR[1] &= ~(1<<11);
+	GPIOB->AFR[1] |= (1<<10);
+	GPIOB->AFR[1] &= ~(1<<9);
+	GPIOB->AFR[1] &= ~(1<<8);
+	
+	/* Setup PB11 as RX for USART3 */
+	// Set to af
+	GPIOB->MODER &= ~(1<<22);
+	GPIOB->MODER |= (1<<23);
+	// Set to af4
+	GPIOB->AFR[1] &= ~(1<<15);
+	GPIOB->AFR[1] |= (1<<14);
+	GPIOB->AFR[1] &= ~(1<<13);
+	GPIOB->AFR[1] &= ~(1<<12);
+	
+	/* Setup for USART3*/
+	USART3->CR1 |= (1<<2); // Enable transceiver and receiver
+	USART3->CR1 |= (1<<3);
+	USART3->CR1 |= (1<<5); // Enable interrupt
+	USART3->BRR = HAL_RCC_GetHCLKFreq() / 9600; // Set baud rate to 9600 bits/sec
+	USART3->CR1 |= (1<<0); // Enable USART3
+	
+	NVIC_EnableIRQ(USART3_4_IRQn); // Enable interrupt for USART3
+	NVIC_SetPriority(USART3_4_IRQn, 2); // Set priority of interrupt to 2
+	
+	
+	GPIOC->MODER |= (1<<12);// Set PC6 (red) to general purpose output mode
+	GPIOC->MODER &= ~(1<<13);
+	GPIOC->OTYPER &= ~(1<<6); // Set to push-pull mode
+	GPIOC->OSPEEDR &= ~(1<<12); // Set to low speed
+	GPIOC->OSPEEDR &= ~(1<<13);
+	GPIOC->PUPDR &= ~(1<<12); // Set no pull-up, no pull-down
+	GPIOC->PUPDR &= ~(1<<13);
+	GPIOC->ODR &= ~(1<<6); // Initialize to low
+	
+	
+	GPIOC->MODER |= (1<<14); // Set PC7 (blue) to general purpose output mode
+	GPIOC->MODER &= ~(1<<15);
+	GPIOC->OTYPER &= ~(1<<7); // Set to push-pull mode
+	GPIOC->OSPEEDR &= ~(1<<14); // Set to low speed
+	GPIOC->OSPEEDR &= ~(1<<15);
+	GPIOC->PUPDR &= ~(1<<14); // Set no pull-up, no pull-down
+	GPIOC->PUPDR &= ~(1<<15);
+	GPIOC->ODR &= ~(1<<7);// Set low
+	
+
+	GPIOC->MODER |= (1<<16); // Set PC8 (orange) to general purpose output mode
+	GPIOC->MODER &= ~(1<<17);
+	GPIOC->OTYPER &= ~(1<<8);// Set to push-pull mode
+	GPIOC->OSPEEDR &= ~(1<<16);// Set to low speed
+	GPIOC->OSPEEDR &= ~(1<<17);
+	GPIOC->PUPDR &= ~(1<<16); // Set no pull-up, no pull-down
+	GPIOC->PUPDR &= ~(1<<17);
+	GPIOC->ODR &= ~(1<<8); // Set low
+	
+	
+	GPIOC->MODER |= (1<<18);// Set PC9 (green) to general purpose output mode
+	GPIOC->MODER &= ~(1<<19);
+	GPIOC->OTYPER &= ~(1<<9); // Set to push-pull mode
+	GPIOC->OSPEEDR &= ~(1<<18); // Set to low speed
+	GPIOC->OSPEEDR &= ~(1<<19);
+	GPIOC->PUPDR &= ~(1<<18); // Set no pull-up, no pull-down
+	GPIOC->PUPDR &= ~(1<<19);
+	GPIOC->ODR &= ~(1<<9); // Initialize to low
 																
 															
 	GPIOB->AFR[1] |= 0x4400;//TX and RX line af select to 0100											
@@ -121,64 +247,26 @@ int main(void)
 	USART3->CR1 |= USART_CR1_TE;
 	USART3->CR1 |= USART_CR1_UE;
 	
-  /* USER CODE END 2 */
-	char error[] = {'E','r','r','o','r', '\n', '\0'};
-	volatile char transmit = 0;														
+  /* USER CODE END 2 */													
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
-		while (((USART3->ISR >> 5) & 1))
+    {
+		if(!flag) // Check if CMD? has already been sent
 		{
+			trans_string("CMD?\n");
+			flag = 1;
 		}
-//		if (!((USART3->ISR) & USART_ISR_RXNE))
-//		{
-//			transmit = (USART3->RDR);
-//			if (1)//if (transmit == 'r') //r
-//			{
-//				HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
-//			}
-//			else if (transmit == 'g')//g
-//			{
-//				HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
-//			}
-//			else if (transmit == 'b')//b
-//			{
-//				HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
-//			}
-//			else if (transmit == 'o')//o
-//			{
-//				HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
-//			}
-//			else
-//			{
-//				//printf("Received character not an LED color");
-//			}
-//		}
-//		else
-//		{
-//			//printf("receive bit empty");
-//		}
-			transmit = (USART3->RDR);
-			switch(transmit)
-			{
-				case'r':
-					HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
-					break;
-				case'g':
-					HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
-				break;
-				case'b':
-					HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
-				break;
-				case'o':
-					HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
-					break;
-				default:
-					transmit_string(error);
-					break;
-			}
+		if (receive_flag) // Reset values if receive flag is on
+		{
+			flag = 0;
+			receive_flag = 0;
+			receive_value = 0;
+			led_num = 0;
+		}
+	}
+
 		
 		
 

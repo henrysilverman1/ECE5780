@@ -129,8 +129,8 @@ int main(void)
 	TIM3->CCMR1 &= ~(/*(1<<0) | (1<<4) | (1<<1) | (1<<8) | (1<<9) |*/ (1<<12)); //Output ch1 to PWM mode 2, 
 	TIM3->CCMR1 |= ((1<<3) | (1<<4) |(1<<5) | (1<<6) | (1<<11) | (1<<13) | (1<<14)); 
 	TIM3->CCER |= ((1<<0) | (1<<4)); //Enable ch1 and ch2
-	TIM3->CCR1 = 1250;//CCRx 20% ARR
-	TIM3->CCR2 = 1250;
+	TIM3->CCR1 = 250;//CCRx 20% ARR
+	TIM3->CCR2 = 250;
 	TIM3 -> CR1 |= (1<<0);//Timer 3 enable
 	
 	NVIC_EnableIRQ(TIM2_IRQn);
