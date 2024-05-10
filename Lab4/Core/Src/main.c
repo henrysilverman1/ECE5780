@@ -88,28 +88,31 @@ void trans_string(const char* string) // Function to transmit string of characht
 
 void USART3_4_IRQHandler(void)
 {
-	int cmd_text_printed = 0;
-	while (!(USART3->ISR & USART_ISR_RXNE)) {}
+	while (!(USART3->ISR & USART_ISR_RXNE)) {}//Check flags
 	
 	receive_value = (USART3->RDR) &= 0xff;
 	
-	switch (receive_value)
+	switch (receive_value)//Upon getting character
 	{
-		case 'r':
+		case 'r': 
 			trans_string("RED LED\n");
 			led_num = 6;
+			HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_6);
 			break;
 		case 'b':
 			trans_string("BLUE LED\n");
-			receive_value = 7;
+			led_num = 7;
+			HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
 			break;
 		case 'o':
 			trans_string("ORANGE LED\n");
 			led_num = 8;
+			HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
 			break;
 		case 'g':
 			trans_string("GREEN LED\n");
 			led_num = 9;
+			HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_9);
 			break;
 		case '0':
 			if (led_num != 0)
